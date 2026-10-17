@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tsiky — Projets sonores</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans&display=swap">
+<style>
+  /* =================================================================v
+     1. VARIABLES DE THÉMES (Clair / Sombre)
+     ================================================================= */
+  :root {
+    --bg: #f2f2f0;
+    --fg: #161616;
+    --mute: #85857f;
+    --line: #d9d9d4;
+    --accent: #161616;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111111;
+      --fg: #e8e8e4;
+      --mute: #7c7c76;
+      --line: #2a2a28;
+      --accent: #e8e8e4;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #111111;
+    --fg: #e8e8e4;
+    --mute: #7c7c76;
+    --line: #2a2a28;
+    --accent: #e8e8e4;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f2f2f0;
+    --fg: #161616;
+    --mute: #85857f;
+    --line: #d9d9d4;
+    --accent: #161616;
+    color-scheme: light;
+  }
+
+  /* =================================================================v
+     2. STYLES GÉNERAUX ET MISE EN PAGE
+     ================================================================= */
+  * { box-sizing: border-box; }
+  
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 400 15px/1.7 "Pixelify Sans", ui-monospace, Menlo, Consolas, monospace;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* En-tête du site */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 28px 6vw;
+    font-size: 12px;
+  }
+
+  header nav {
+    display: flex;
+    align-items: center;
+  }
+
+  header a, 
+  header button.theme-toggle {
+    color: var(--mute);
+    text-decoration: none;
+    cursor: pointer;
+    margin-left: 1.8em;
+    background: none;
+    border: 0;
+    font: inherit;
+    padding: 0;
+  }
+
+  header a:hover, 
+  header a.on, 
+  header button.theme-toggle:hover {
+    color: var(--fg);
+  }
+
+  header .logo {
+    color: var(--fg);
+    margin: 0;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  /* Conteneur principal */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 6vh 6vw 80px;
+  }
+
+  /* Gestion des vues (SPA simple) */
+  .view {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .view.on {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Page d'accueil / Introduction */
+  .intro {
+    max-width: 30em;
+    margin: 0 0 9vh;
+    font-size: 15px;
+  }
+  .intro span { color: var(--mute); }
+
+  /* Tableau des projets (Index) */
+  .row {
+    display: grid;
+    grid-template-columns: 3em 1fr 5em 6.5em 4em;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+    cursor: pointer;
+    color: var(--mute);
+  }
+  .row:last-child { border-bottom: 1px solid var(--line); }
+  .row b { font-weight: 400; color: var(--fg); }
+  .row:hover b, .row:hover { color: var(--fg); }
+  
+  .row.h {
+    cursor: default;
+    padding: 0 0 8px;
+    border: 0;
+  }
+  /* La taille de police est appliquée aux cellules (et non au conteneur de la
+     grille) : les largeurs de colonnes déclarées en em doivent se résoudre
+     avec la même base de police que les lignes de données, sinon l'en-tête
+     se désaligne. */
+  .row.h span { font-size: 11px; }
+  .row.h:hover { color: var(--mute); }
+
+  /* Bouton de retour vers l'index */
+  .back {
+    color: var(--mute);
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-block;
+    margin-bottom: 6vh;
+  }
+  .back:hover { color: var(--fg); }
+
+  /* Détails du projet */
+  h1 {
+    font-weight: 400;
+    font-size: 22px;
+    margin: 0 0 28px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: 8em 1fr;
+    gap: 4px 16px;
+    margin: 0 0 32px;
+    font-size: 13px;
+  }
+  dt { color: var(--mute); }
+  dd { margin: 0; }
+
+  .text {
+    max-width: 34em;
+    margin: 0 0 40px;
+  }
+
+  /* =================================================================v
+     3. LECTEUR SOUNDCLOUD (Intégration épurée)
+     ================================================================= */
+  .sc-player-container {
+    margin: 24px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
+  }
+  
+  .sc-player-container iframe {
+    width: 100%;
+    height: 120px;
+    border: none;
+    filter: grayscale(100%);
+    transition: filter 0.3s;
+  }
+  
+  .sc-player-container iframe:hover {
+    filter: grayscale(0%);
+  }
+
+  /* Journal / Historique des versions du projet */
+  .log {
+    margin: 40px 0 0;
+    font-size: 13px;
+  }
+  .log div {
+    display: grid;
+    grid-template-columns: 8em 1fr;
+    gap: 16px;
+    padding: 6px 0;
+  }
+  .log div span:first-child { color: var(--mute); }
+
+  /* Note de bas de page */
+  .note {
+    color: var(--mute);
+    font-size: 11px;
+    margin-top: 10vh;
+  }
+
+  /* Responsive pour mobiles */
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 2.5em 1fr 4em; }
+    .row .s, .row .d { display: none; }
+  }
+  /* =================================================================
+     FORMULAIRE DE CONTACT
+     ================================================================= */
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .contact-form .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .contact-form label {
+    font-size: 12px;
+    color: var(--mute);
+  }
+
+  .contact-form input, 
+  .contact-form textarea {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    padding: 10px;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    border-radius: 0;
+  }
+
+  .contact-form input:focus, 
+  .contact-form textarea:focus {
+    border-color: var(--fg);
+  }
+
+  .contact-form button {
+    background: var(--fg);
+    color: var(--bg);
+    border: none;
+    padding: 10px 18px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: opacity 0.2s;
+  }
+
+  .contact-form button:hover {
+    opacity: 0.8;
+  }
+</style>
+</head>
+
+<body class="home">
+
+  <!-- EN-TÊTE DU SITE -->
+  <header>
+    <a class="logo" data-go="home">Tsiky</a>
+    <nav>
+      <a data-go="home" class="on">Projets</a>
+      <a data-go="about">À propos</a>
+      <a data-go="contact">Contact</a>
+      <!-- Bouton de bascule du thème clair/sombre -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Changer de thème">◐</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- VUE 1 : ACCUEIL / LISTE DES PROJETS -->
+    <section class="view on" id="home">
+      <p class="intro">Projets sonores et archives.<br><span id="count"></span></p>
+      <div class="row h">
+        <span>N°</span>
+        <span>Titre</span>
+        <span>Année</span>
+        <span class="s">Statut</span>
+        <span class="d">Durée</span>
+      </div>
+      <!-- Le conteneur de la liste est alimenté dynamiquement par le script JS -->
+      <div id="list"></div>
+    </section>
+
+    <!-- VUE 2 : DÉTAIL D'UN PROJET -->
+    <section class="view" id="project">
+      <span class="back" data-go="home">← Index</span>
+      <h1 id="ptitle"></h1>
+      <dl id="pmeta"></dl>
+      <div class="text" id="ptext"></div>
+      
+      <!-- Lecteur SoundCloud embarqué -->
+      <div class="sc-player-container">
+        <iframe id="scPlayer" src="" allow="autoplay"></iframe>
+      </div>
+    </section>
+
+    <!-- VUE 3 : À PROPOS -->
+    <section class="view" id="about">
+      <div class="text">
+        <p>Musicien et technicien audio autodidacte basé à Madagascar, j'explore différent horizon musicaux pour parfaire mon art et affiner ma technique.</p>
+      </div>
+    </section>
+
+    <!-- VUE 4 : CONTACT -->
+    <section class="view" id="contact">
+      <div class="text">
+        <p>Une question ou un projet ? Laisse un message :</p>
+        
+        <form action="https://api.web3forms.com/submit" method="POST" class="contact-form">
+          <!-- 1. Va sur https://web3forms.com/ (gratuit), entre ton adresse mail pour recevoir ta clé, et colle-la ci-dessous : -->
+          <input type="hidden" name="access_key" value="VOTRE_CLE_WEB3FORMS_ICI">
+          
+          <!-- Sujet du mail que tu recevras -->
+          <input type="hidden" name="subject" value="Nouveau message - Portfolio Tsiky">
+    
+          <div class="field">
+            <label for="email">Ton e-mail</label>
+            <input type="email" id="email" name="email" required placeholder="nom@exemple.com">
+          </div>
+    
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" required placeholder="Bonjour..."></textarea>
+          </div>
+    
+          <button type="submit">Envoyer</button>
+        </form>
+      </div>
+    </section>
+
+    <p class="note">Vous trouverez sur ce site, une documentation détaillée de mes projets musicaux, les maquettes en cours de production et peut-être à l'avenir mes projets finis. Si vous êtes intéressé par mon travail ou que vous cherchez un collaborateur pour un projet musical (mixage, sound design, composition,...), vous pouvez passer par le formulaire dans la section contact.</p>
+  </main>
+
+  <!-- SCRIPTS LOGIQUE & NAVIGATION -->
+  <script>
+    /* =================================================================v
+       1. BASE DE DONNÉES DES PROJETS
+       Modifiez ou ajoutez vos morceaux ici en renseignant scUrl.
+       ================================================================= */
+    var P = [
+      {
+        t: "Submarine",
+        y: "2026",
+        s: "En cours",
+        d: "7:30",
+        tags: "ambient, drone",
+        tools: "Reaper, Cardinal",
+        scUrl: "https://soundcloud.com/tsiky-86921667/submarine",
+        x: "C'est le premier master pour ce titre et le premier projet de ce site. Entièrement basé sur le synthétiseur modulaire virtuel open-source Cardinal, ce titre est une exploration de la musique générative et de l'ambient. L'objectif étant de poser un décor aquatique et un peu mystique. Composition achevée le 10/09/2026 et finalisation du master le 16/10/2026."
+      }
+    ];
+
+    // Fonction utilitaire pour formater les numéros avec un zéro devant (ex: 01, 02)
+    function pad(n) {
+      return (n < 10 ? '0' : '') + n;
+    }
+
+    // Génération automatique des lignes du tableau dans la vue d'accueil
+    var list = document.getElementById('list');
+    document.getElementById('count').textContent = P.length + ' projets';
+
+    P.forEach(function(p, i) {
+      var r = document.createElement('div');
+      r.className = 'row';
+      r.innerHTML = '<span>' + pad(P.length - i) + '</span><b>' + p.t + '</b><span>' + p.y + '</span><span class="s">' + p.s + '</span><span class="d">' + p.d + '</span>';
+      
+      // Action au clic sur une ligne : ouverture du projet correspondant
+      r.onclick = function() { open_(i); };
+      list.appendChild(r);
+    });
+
+    /* =================================================================v
+       2. GESTION DE LA NAVIGATION ENTRE LES VUES
+       ================================================================= */
+    function show(id) {
+      // Bascule la visibilité des sections
+      document.querySelectorAll('.view').forEach(function(v) {
+        v.classList.toggle('on', v.id === id);
+      });
+      
+      // Met à jour l'état actif dans le menu de navigation
+      document.querySelectorAll('nav a').forEach(function(a) {
+        a.classList.toggle('on', (a.dataset.go === 'home' && (id === 'home' || id === 'project')) || a.dataset.go === id);
+      });
+      
+      document.body.classList.toggle('home', id === 'home');
+      window.scrollTo(0, 0);
+
+      // Coupe la lecture audio de l'iframe si on quitte la page de détail du projet
+      if (id !== 'project') {
+        document.getElementById('scPlayer').src = '';
+      }
+    }
+
+    /* =================================================================v
+       3. CHARGEMENT D'UN PROJET DÉTAILLÉ
+       ================================================================= */
+    function open_(i) {
+      var p = P[i];
+      
+      // Remplissage des métadonnées textuelles
+      document.getElementById('ptitle').textContent = p.t;
+      document.getElementById('pmeta').innerHTML = '<dt>Année</dt><dd>' + p.y + '</dd><dt>Statut</dt><dd>' + p.s + '</dd><dt>Durée</dt><dd>' + p.d + '</dd><dt>Tags</dt><dd>' + p.tags + '</dd><dt>Outils</dt><dd>À renseigner</dd>';
+      document.getElementById('ptext').innerHTML = '<p>' + p.x + '</p>';
+      document.getElementById('pmeta').innerHTML = '<dt>Année</dt><dd>' + p.y + '</dd><dt>Statut</dt><dd>' + p.s + '</dd><dt>Durée</dt><dd>' + p.d + '</dd><dt>Tags</dt><dd>' + p.tags + '</dd><dt>Outils</dt><dd>' + (p.tools || 'À renseigner') + '</dd>';
+      // Configuration et injection de l'URL SoundCloud dans l'Iframe
+      var encodedUrl = encodeURIComponent(p.scUrl);
+      var scEmbedUrl = 'https://w.soundcloud.com/player/?url=' + encodedUrl + '&color=%23161616&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
+      document.getElementById('scPlayer').src = scEmbedUrl;
+      
+      show('project');
+    }
+
+    // Écouteurs d'événements pour les liens de navigation
+    document.querySelectorAll('[data-go]').forEach(function(e) {
+      e.onclick = function() { show(e.dataset.go); };
+    });
+
+    /* =================================================================v
+       4. GESTION DU THÈME CLAIR / SOMBRE MANUEL
+       ================================================================= */
+    var tBtn = document.getElementById('themeToggle');
+    tBtn.onclick = function() {
+      var current = document.documentElement.getAttribute('data-theme');
+      var next = (current === 'dark') ? 'light' : 'dark';
+      
+      if (!current) {
+        var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        next = isDark ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', next);
+    };
+  </script>
+</body>
+</html>
